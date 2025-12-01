@@ -43,7 +43,7 @@ LANG = {
         "account": "📍 حسابي",
 
         "no_accounts": "❗ لا توجد حسابات متاحة حالياً.",
-        "task_details": "🔹 Go to Gmail and create an account for $0.05 Task details:\n\nالاسم: {first} {last}\nالإيميل: {email}\nكلمة المرور: {password}\n\n⚠ بعد التنفيذ أرسل رسالة نصية تؤكد إتمام المهمة.",
+        "task_details": "🔹 بيانات المهمة:\n\nالاسم: {first} {last}\nالإيميل: {email}\nكلمة المرور: {password}\n\n⚠ بعد التنفيذ أرسل رسالة نصية تؤكد إتمام المهمة.",
         "proof_received": "⏳ تم إرسال مهمتك للمراجعة.",
         "send_text_only": "⚠ يجب إرسال رسالة نصية فقط لتأكيد المهمة.",
         "no_pending": "❗ لا توجد مهمة تنتظر التنفيذ.",
@@ -67,7 +67,7 @@ LANG = {
         "account": "📍 My Account",
 
         "no_accounts": "❗ No accounts available right now.",
-        "task_details": "🔹 Go to Gmail and create an account for $0.05 Task details:\n\nName: {first} {last}\nEmail: {email}\nPassword: {password}\n\n⚠ After completing the task, send a text message to confirm.",
+        "task_details": "🔹 Task Details:\n\nName: {first} {last}\nEmail: {email}\nPassword: {password}\n\n⚠ After completing the task, send a text message to confirm.",
         "proof_received": "⏳ Your task was sent for review.",
         "send_text_only": "⚠ You must send *text only* to confirm the task.",
         "no_pending": "❗ No pending task.",
@@ -91,7 +91,7 @@ LANG = {
         "account": "📍 Mon Compte",
 
         "no_accounts": "❗ Aucun compte disponible pour le moment.",
-        "task_details": "🔹 Go to Gmail and create an account for $0.05 Task details:\n\nNom : {first} {last}\nEmail : {email}\nMot de passe : {password}\n\n⚠ Après avoir terminé, envoyez un message texte pour confirmer.",
+        "task_details": "🔹 Détails de la tâche :\n\nNom : {first} {last}\nEmail : {email}\nMot de passe : {password}\n\n⚠ Après avoir terminé, envoyez un message texte pour confirmer.",
         "proof_received": "⏳ Votre tâche a été envoyée pour vérification.",
         "send_text_only": "⚠ Vous devez envoyer uniquement un message texte pour confirmer la tâche.",
         "no_pending": "❗ Aucune tâche en attente.",
@@ -115,7 +115,7 @@ LANG = {
         "account": "📍 Мой аккаунт",
 
         "no_accounts": "❗ Нет доступных аккаунтов.",
-        "task_details": "🔹 Go to Gmail and create an account for $0.05 Task details:\n\nИмя: {first} {last}\nEmail: {email}\nПароль: {password}\n\n⚠ После выполнения отправьте текстовое сообщение для подтверждения.",
+        "task_details": "🔹 Детали задания:\n\nИмя: {first} {last}\nEmail: {email}\nПароль: {password}\n\n⚠ После выполнения отправьте текстовое сообщение для подтверждения.",
         "proof_received": "⏳ Ваше задание отправлено на проверку.",
         "send_text_only": "⚠ Отправьте *только текст*, чтобы подтвердить выполнение.",
         "no_pending": "❗ Нет ожидающих заданий.",
@@ -509,5 +509,3 @@ if __name__ == "__main__":
         print("Stopped by user")
     except Exception as e:
         print("Stopped with error:", e)
-
-
