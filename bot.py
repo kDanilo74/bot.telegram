@@ -263,7 +263,7 @@ def accept(m):
     if m.from_user.id != ADMIN_ID: return
     uid = m.text.replace("/accept_", "")
     add_balance(uid, 0.09)
-    bot.send_message(uid, "✔ تم قبول المهمة وإضافة 0.05$ إلى رصيدك.")
+    bot.send_message(uid, "✔ تم قبول المهمة وإضافة 0.09$ إلى رصيدك.")
     bot.reply_to(m, "✔ تم القبول.")
 
 @bot.message_handler(commands=['reject'])
@@ -275,4 +275,5 @@ def reject(m):
 
 # ---------------- RUN ----------------
 bot.infinity_polling()
+
 
