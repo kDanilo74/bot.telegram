@@ -1,150 +1,277 @@
-import telebot
-from telebot import types
+# bot.py
+import os
 import csv
 import json
-import os
+from pathlib import Path
+import telebot
+from telebot import types
 
-# ========================
-# 🔐 التوكن
-# ========================
-BOT_TOKEN = "8525745636:AAFOZoXtHl-1MxXkiBpm0AxiFEPBd4FcKsk"
-SUPPORT_USER = "@karemdanilo"   # حط يوزر الدعم هنا
+# ---------------- CONFIG ----------------
+TOKEN = "8525745636:AAFOZoXtHl-1MxXkiBpm0AxiFEPBd4FcKsk"
+ADMIN_ID = 7152023720     # رقمك انت
+SUPPORT_USER = "karemdanilo"   # اليوزر بتاعك بدون @
 
-bot = telebot.TeleBot(BOT_TOKEN)
+# 🔥 الرابط الثابت اللي هتحطه يدوي وانت تغيره وقت ما تحب
+TASK_URL = "https://url-shortener.me/1FRV"
 
-# ========================
-# 📁 تحميل الحسابات
-# ========================
-ACCOUNTS_FILE = "users.csv"
+bot = telebot.TeleBot(TOKEN, threaded=True)
 
-def load_accounts():
-    if not os.path.exists(ACCOUNTS_FILE):
-        return []
-    with open(ACCOUNTS_FILE, newline='', encoding='utf-8') as f:
-        reader = csv.DictReader(f)
-        return list(reader)
+BASE = Path(__file__).parent
+ACCOUNTS_FILE = BASE / "accounts.csv"
+PENDING_FILE = BASE / "pending_tasks.csv"
+USERS_FILE = BASE / "users.json"
 
-accounts = load_accounts()
-
-# ========================
-# 📁 تحميل رصيد المستخدمين
-# ========================
-BALANCE_FILE = "balance.json"
-
-def load_balance():
-    if not os.path.exists(BALANCE_FILE):
+# ------------- load/save users -------------
+def load_json(file):
+    if not file.exists(): return {}
+    try:
+        return json.loads(file.read_text(encoding="utf-8"))
+    except:
         return {}
-    with open(BALANCE_FILE, "r") as f:
-        return json.load(f)
 
-def save_balance(bal):
-    with open(BALANCE_FILE, "w") as f:
-        json.dump(bal, f)
+def save_json(file, data):
+    file.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 
-balances = load_balance()
+users = load_json(USERS_FILE)
 
-# ========================
-# 📌 لوحة الأزرار
-# ========================
-def main_menu():
-    menu = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    menu.add("📝 Do Task", "💰 My Balance")
-    menu.add("🔗 Referral Link", "🆘 Support")
-    return menu
+def ensure_user(uid):
+    uid = str(uid)
+    if uid not in users:
+        users[uid] = {"balance": 0.0, "ref": None, "first_task": False}
+        save_json(USERS_FILE, users)
 
-# ========================
-# 🚀 Start
-# ========================
+def add_balance(uid, amount):
+    uid=str(uid)
+    ensure_user(uid)
+    users[uid]["balance"] += float(amount)
+    save_json(USERS_FILE, users)
+
+# ---------------- READ ACCOUNTS --------------
+def read_accounts():
+    if not ACCOUNTS_FILE.exists(): return []
+    rows=[]
+    with ACCOUNTS_FILE.open(encoding="utf-8") as f:
+        r=csv.reader(f)
+        for a in r:
+            if len(a)>=4:
+                rows.append({"first":a[0],"last":a[1],"email":a[2],"password":a[3]})
+    return rows
+
+def pop_account():
+    accounts=read_accounts()
+    if not accounts: return None
+    acc=accounts.pop(0)
+    with ACCOUNTS_FILE.open("w",encoding="utf-8",newline="") as f:
+        w=csv.writer(f)
+        for a in accounts:
+            w.writerow([a["first"],a["last"],a["email"],a["password"]])
+    return acc
+
+def append_pending(uid,acc,proof):
+    with PENDING_FILE.open("a",encoding="utf-8",newline="") as f:
+        w=csv.writer(f)
+        w.writerow([uid,acc["first"],acc["last"],acc["email"],acc["password"],proof])
+
+# ---------------- MULTI LANGUAGE ----------------
+
+LANG = {
+    "ar": {
+        "start": "أهلاً! اختر من القائمة:",
+        "btn_task": "📝 المهام",
+        "btn_balance": "💰 الرصيد",
+        "btn_ref": "🔗 رابط الإحالة",
+        "btn_support": "🆘 الدعم",
+        "task_sent": "تم إرسال بيانات المهمة:",
+        "send_proof": "\n⚠️ بعد التنفيذ أرسل رسالة نصية تؤكد إتمام المهمة.",
+        "no_task": "لا توجد مهام متاحة الآن.",
+        "ref_msg": "🔗 رابط الإحالة:\n{link}\n\n🎁 تحصل على 0.02$ عند تنفيذ الإحالة أول مهمة فقط.",
+        "support_text": "للتواصل مع الدعم: @{admin}"
+    },
+    "en": {
+        "start": "Welcome! Choose from menu:",
+        "btn_task": "📝 Tasks",
+        "btn_balance": "💰 Balance",
+        "btn_ref": "🔗 Referral Link",
+        "btn_support": "🆘 Support",
+        "task_sent": "Task data sent:",
+        "send_proof": "\n⚠️ After finishing, send a text message as proof.",
+        "no_task": "No tasks available now.",
+        "ref_msg": "🔗 Your referral link:\n{link}\n\n🎁 You earn $0.02 when your referral completes the first task.",
+        "support_text": "Contact support: @{admin}"
+    },
+    "es": {
+        "start": "¡Hola! Elige del menú:",
+        "btn_task": "📝 Tareas",
+        "btn_balance": "💰 Saldo",
+        "btn_ref": "🔗 Enlace de referido",
+        "btn_support": "🆘 Soporte",
+        "task_sent": "Datos de la tarea enviados:",
+        "send_proof": "\n⚠️ Después de terminar, envía un mensaje de texto como prueba.",
+        "no_task": "No hay tareas disponibles.",
+        "ref_msg": "🔗 Enlace de referido:\n{link}\n\n🎁 Ganas $0.02 cuando tu referido completa su primera tarea.",
+        "support_text": "Soporte: @{admin}"
+    },
+    "fr": {
+        "start": "Bienvenue ! Choisissez dans le menu :",
+        "btn_task": "📝 Tâches",
+        "btn_balance": "💰 Solde",
+        "btn_ref": "🔗 Lien de parrainage",
+        "btn_support": "🆘 Support",
+        "task_sent": "Données de tâche envoyées :",
+        "send_proof": "\n⚠️ Après avoir terminé, envoyez un message texte comme preuve.",
+        "no_task": "Aucune tâche disponible.",
+        "ref_msg": "🔗 Votre lien de parrainage :\n{link}\n\n🎁 Vous gagnez 0.02$ lorsque votre filleul termine sa première tâche.",
+        "support_text": "Support : @{admin}"
+    },
+    "de": {
+        "start": "Willkommen! Wähle aus dem Menü:",
+        "btn_task": "📝 Aufgaben",
+        "btn_balance": "💰 Guthaben",
+        "btn_ref": "🔗 Empfehlungslink",
+        "btn_support": "🆘 Support",
+        "task_sent": "Aufgabendaten gesendet:",
+        "send_proof": "\n⚠️ Nach Abschluss sende eine Textnachricht als Nachweis.",
+        "no_task": "Keine Aufgaben verfügbar.",
+        "ref_msg": "🔗 Dein Empfehlungslink:\n{link}\n\n🎁 Du verdienst 0,02$, wenn dein Referral die erste Aufgabe erledigt.",
+        "support_text": "Support: @{admin}"
+    },
+    "it": {
+        "start": "Benvenuto! Scegli dal menu:",
+        "btn_task": "📝 Compiti",
+        "btn_balance": "💰 Saldo",
+        "btn_ref": "🔗 Link di riferimento",
+        "btn_support": "🆘 Supporto",
+        "task_sent": "Dati della missione inviati:",
+        "send_proof": "\n⚠️ Dopo aver finito, invia un messaggio di testo come prova.",
+        "no_task": "Nessuna missione disponibile.",
+        "ref_msg": "🔗 Il tuo link referral:\n{link}\n\n🎁 Guadagni 0.02$ quando il referral completa la prima missione.",
+        "support_text": "Supporto: @{admin}"
+    },
+    "ru": {
+        "start": "Добро пожаловать! Выберите из меню:",
+        "btn_task": "📝 Задания",
+        "btn_balance": "💰 Баланс",
+        "btn_ref": "🔗 Реферальная ссылка",
+        "btn_support": "🆘 Поддержка",
+        "task_sent": "Данные задания отправлены:",
+        "send_proof": "\n⚠️ После выполнения отправьте текстовое сообщение как подтверждение.",
+        "no_task": "Нет доступных заданий.",
+        "ref_msg": "🔗 Ваша реферальная ссылка:\n{link}\n\n🎁 Вы получаете 0.02$, когда реферал выполнит первое задание.",
+        "support_text": "Поддержка: @{admin}"
+    }
+}
+
+def user_lang(m):
+    code = (m.from_user.language_code or "en")[:2]
+    return code if code in LANG else "en"
+
+# -------------------- Keyboards --------------------
+def menu(user):
+    L = LANG[user_lang(user)]
+    kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    kb.row(L["btn_task"])
+    kb.row(L["btn_balance"], L["btn_ref"])
+    kb.row(L["btn_support"])
+    return kb
+
+# -------------------- Handlers ---------------------
+
 @bot.message_handler(commands=['start'])
-def start(message):
-    user_id = str(message.chat.id)
-    if user_id not in balances:
-        balances[user_id] = 0
-        save_balance(balances)
+def start(m):
+    ensure_user(m.from_user.id)
+    L = LANG[user_lang(m.from_user)]
 
-    # رابط الإحالة
-    referral = f"https://t.me/{bot.get_me().username}?start={user_id}"
+    ref_link = f"https://t.me/{bot.get_me().username}?start={m.from_user.id}"
 
     bot.send_message(
-        message.chat.id,
-        f"🔰 **Welcome!**\n\n"
-        f"🌍 اللغة يتم تحديدها تلقائيًا حسب جهازك.\n"
-        f"💸 نفّذ المهام واحصل على أرباح.\n\n"
-        f"🔗 رابط الإحالة الخاص بك:\n{referral}",
-        parse_mode="Markdown",
-        reply_markup=main_menu()
+        m.chat.id,
+        L["start"],
+        reply_markup=menu(m.from_user)
     )
 
-# ========================
-# 📝 تنفيذ مهمة
-# ========================
-@bot.message_handler(func=lambda m: m.text == "📝 Do Task")
-def do_task(message):
-    if not accounts:
-        bot.send_message(message.chat.id, "❌ لا توجد مهام متاحة الآن.")
+@bot.message_handler(func=lambda m: True)
+def main_handler(m):
+    uid = m.from_user.id
+    ensure_user(uid)
+    L = LANG[user_lang(m.from_user)]
+    txt = m.text
+
+    # ---------- طلب مهمة ----------
+    if txt == L["btn_task"]:
+        acc = pop_account()
+        if not acc:
+            bot.send_message(m.chat.id, L["no_task"])
+            return
+
+        mission = (
+            f"🔷 **بيانات المهمة:**\n"
+            f"الاسم: {acc['first']} {acc['last']}\n"
+            f"الإيميل: {acc['email']}\n"
+            f"كلمة المرور: {acc['password']}\n"
+            f"رابط المهمة: {TASK_URL}\n"
+            f"{L['send_proof']}"
+        )
+
+        bot.send_message(m.chat.id, mission, parse_mode="Markdown")
+        users[str(uid)]["pending"] = acc
+        save_json(USERS_FILE, users)
         return
 
-    acc = accounts.pop(0)
+    # ---------- الرصيد ----------
+    if txt == L["btn_balance"]:
+        balance = users[str(uid)]["balance"]
+        bot.send_message(m.chat.id, f"💰 {balance}$")
+        return
 
-    text = (
-        "🎯 **Your Task**\n\n"
-        f"👤 First Name: `{acc['first']}`\n"
-        f"👥 Last Name: `{acc['last']}`\n"
-        f"📧 Email: `{acc['email']}`\n"
-        f"🔐 Password: `{acc['password']}`\n\n"
-        "بعد تنفيذ المهمة — ابعت إثباتك."
-    )
+    # ---------- الإحالة ----------
+    if txt == L["btn_ref"]:
+        ref_link = f"https://t.me/{bot.get_me().username}?start={uid}"
+        bot.send_message(m.chat.id, L["ref_msg"].format(link=ref_link))
+        return
 
-    bot.send_message(message.chat.id, text, parse_mode="Markdown")
+    # ---------- الدعم ----------
+    if txt == L["btn_support"]:
+        bot.send_message(m.chat.id, L["support_text"].format(admin=SUPPORT_USER))
+        return
 
-# ========================
-# 💰 الرصيد
-# ========================
-@bot.message_handler(func=lambda m: m.text == "💰 My Balance")
-def balance(message):
-    user_id = str(message.chat.id)
-    bal = balances.get(user_id, 0)
-    bot.send_message(message.chat.id, f"💰 Your Balance: **{bal}$**", parse_mode="Markdown")
+    # ---------- إرسال إثبات ----------
+    if "pending" in users[str(uid)]:
+        acc = users[str(uid)]["pending"]
+        proof = txt
 
-# ========================
-# 🔗 الإحالة
-# ========================
-@bot.message_handler(func=lambda m: m.text == "🔗 Referral Link")
-def referral(message):
-    user_id = str(message.chat.id)
-    referral = f"https://t.me/{bot.get_me().username}?start={user_id}"
-    bot.send_message(
-        message.chat.id,
-        f"🔗 Your referral link:\n{referral}\n\n"
-        "🎁 تحصل على 0.02$ عند أول مهمة من إحالتك!",
-        parse_mode="Markdown"
-    )
-
-# ========================
-# 🆘 الدعم الفني
-# ========================
-@bot.message_handler(func=lambda m: m.text == "🆘 Support")
-def support(message):
-    bot.send_message(
-        message.chat.id,
-        f"🆘 **للتواصل مع الدعم:**\n{SUPPORT_USER}",
-        parse_mode="Markdown"
-    )
-
-# ========================
-# 🟢 إشعار بعد إرسال المال
-# ========================
-def notify_payment(user_id, amount):
-    try:
+        # إرسال للإدارة للقبول / الرفض
         bot.send_message(
-            user_id,
-            f"✅ تم إرسال **{amount}$** إلى محفظتك.\nشكراً لاستخدامك خدمتنا!"
+            ADMIN_ID,
+            f"📥 مهمة جديدة بانتظار المراجعة:\n\n"
+            f"👤 المستخدم: {uid}\n"
+            f"الاسم: {acc['first']} {acc['last']}\n"
+            f"الإيميل: {acc['email']}\n"
+            f"الباسورد: {acc['password']}\n"
+            f"الرابط: {TASK_URL}\n\n"
+            f"الرسالة:\n{proof}\n\n"
+            f"/accept_{uid} — قبول\n"
+            f"/reject_{uid} — رفض"
         )
-    except:
-        pass
 
-# ========================
-# تشغيل البوت
-# ========================
-print("BOT RUNNING...")
-bot.polling(none_stop=True)
+        bot.send_message(m.chat.id, "تم إرسال المهمة للمراجعة 👍")
+        del users[str(uid)]["pending"]
+        save_json(USERS_FILE, users)
+
+# ------------ قبول أو رفض الإدارة --------------
+@bot.message_handler(commands=['accept'])
+def accept(m):
+    if m.from_user.id != ADMIN_ID: return
+    uid = m.text.replace("/accept_", "")
+    add_balance(uid, 0.05)
+    bot.send_message(uid, "✔ تم قبول المهمة وإضافة 0.05$ إلى رصيدك.")
+    bot.reply_to(m, "✔ تم القبول.")
+
+@bot.message_handler(commands=['reject'])
+def reject(m):
+    if m.from_user.id != ADMIN_ID: return
+    uid = m.text.replace("/reject_", "")
+    bot.send_message(uid, "❌ تم رفض المهمة.")
+    bot.reply_to(m, "❌ تم الرفض.")
+
+# ---------------- RUN ----------------
+bot.infinity_polling()
