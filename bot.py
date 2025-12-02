@@ -96,7 +96,7 @@ LANG = {
         "task_sent": "Task data sent:",
         "send_proof": "\n⚠️ After finishing, send a text message as proof.",
         "no_task": "No tasks available now.",
-        "ref_msg": "🔗 Your referral link:\n{link}\n\n🎁 You earn $0.02 when your referral completes the first task.",
+        "ref_msg": "🔗 Your referral link:\n{link}\n\n🎁 You earn $0.05 when your referral completes the first task.",
         "support_text": "Contact support: @{admin}"
     },
     "es": {
@@ -108,7 +108,7 @@ LANG = {
         "task_sent": "Datos de la tarea enviados:",
         "send_proof": "\n⚠️ Después de terminar, envía un mensaje de texto como prueba.",
         "no_task": "No hay tareas disponibles.",
-        "ref_msg": "🔗 Enlace de referido:\n{link}\n\n🎁 Ganas $0.02 cuando tu referido completa su primera tarea.",
+        "ref_msg": "🔗 Enlace de referido:\n{link}\n\n🎁 Ganas $0.05 cuando tu referido completa su primera tarea.",
         "support_text": "Soporte: @{admin}"
     },
     "fr": {
@@ -120,7 +120,7 @@ LANG = {
         "task_sent": "Données de tâche envoyées :",
         "send_proof": "\n⚠️ Après avoir terminé, envoyez un message texte comme preuve.",
         "no_task": "Aucune tâche disponible.",
-        "ref_msg": "🔗 Votre lien de parrainage :\n{link}\n\n🎁 Vous gagnez 0.02$ lorsque votre filleul termine sa première tâche.",
+        "ref_msg": "🔗 Votre lien de parrainage :\n{link}\n\n🎁 Vous gagnez 0.05$ lorsque votre filleul termine sa première tâche.",
         "support_text": "Support : @{admin}"
     },
     "de": {
@@ -132,7 +132,7 @@ LANG = {
         "task_sent": "Aufgabendaten gesendet:",
         "send_proof": "\n⚠️ Nach Abschluss sende eine Textnachricht als Nachweis.",
         "no_task": "Keine Aufgaben verfügbar.",
-        "ref_msg": "🔗 Dein Empfehlungslink:\n{link}\n\n🎁 Du verdienst 0,02$, wenn dein Referral die erste Aufgabe erledigt.",
+        "ref_msg": "🔗 Dein Empfehlungslink:\n{link}\n\n🎁 Du verdienst 0,05$, wenn dein Referral die erste Aufgabe erledigt.",
         "support_text": "Support: @{admin}"
     },
     "it": {
@@ -144,7 +144,7 @@ LANG = {
         "task_sent": "Dati della missione inviati:",
         "send_proof": "\n⚠️ Dopo aver finito, invia un messaggio di testo come prova.",
         "no_task": "Nessuna missione disponibile.",
-        "ref_msg": "🔗 Il tuo link referral:\n{link}\n\n🎁 Guadagni 0.02$ quando il referral completa la prima missione.",
+        "ref_msg": "🔗 Il tuo link referral:\n{link}\n\n🎁 Guadagni 0.05$ quando il referral completa la prima missione.",
         "support_text": "Supporto: @{admin}"
     },
     "ru": {
@@ -156,7 +156,7 @@ LANG = {
         "task_sent": "Данные задания отправлены:",
         "send_proof": "\n⚠️ После выполнения отправьте текстовое сообщение как подтверждение.",
         "no_task": "Нет доступных заданий.",
-        "ref_msg": "🔗 Ваша реферальная ссылка:\n{link}\n\n🎁 Вы получаете 0.02$, когда реферал выполнит первое задание.",
+        "ref_msg": "🔗 Ваша реферальная ссылка:\n{link}\n\n🎁 Вы получаете 0.05$, когда реферал выполнит первое задание.",
         "support_text": "Поддержка: @{admin}"
     }
 }
@@ -262,7 +262,7 @@ def main_handler(m):
 def accept(m):
     if m.from_user.id != ADMIN_ID: return
     uid = m.text.replace("/accept_", "")
-    add_balance(uid, 0.05)
+    add_balance(uid, 0.09)
     bot.send_message(uid, "✔ تم قبول المهمة وإضافة 0.05$ إلى رصيدك.")
     bot.reply_to(m, "✔ تم القبول.")
 
@@ -275,3 +275,4 @@ def reject(m):
 
 # ---------------- RUN ----------------
 bot.infinity_polling()
+
