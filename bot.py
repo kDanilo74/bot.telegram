@@ -443,20 +443,30 @@ def reject_proof(message):
         bot.send_message(message.chat.id, L(message.from_user, "no_pending"))
 
 # =========================
+# رفض الملفات/صور أثناء انتظار إثبات المهمة
+# =========================
+@bot.message_handler(content_types=['photo','video','document','sticker','animation'])
+def reject_proof(message):
+    if user_pending_task.get(message.chat.id):
+        bot.send_message(message.chat.id, "⚠ يجب إرسال رسالة نصية فقط لتأكيد المهمة.")
+    else:
+        bot.send_message(message.chat.id, "❗ لا توجد مهمة تنتظر التنفيذ.")
+
+# =========================
 # استلام إثبات المهمة — هذا الهاندلر يعمل فقط إذا المستخدم فعلاً في انتظار
 # =========================
 @bot.message_handler(func=lambda m: user_pending_task.get(m.chat.id) == True)
 def receive_proof(message):
+    # أرسل الأدمن رسالة مع أزرار قبول/رفض
     try:
         bot.send_message(ADMIN_ID, f"📩 إثبات مهمة جديدة\nمن المستخدم: {message.chat.id}\n\nالرسالة:\n{message.text}")
         markup = telebot.types.InlineKeyboardMarkup()
-        # Keep admin buttons simple (admin likely uses one language); leave as symbols + arabic labels from original
         markup.add(
             telebot.types.InlineKeyboardButton("✔ قبول", callback_data=f"accept_{message.chat.id}"),
             telebot.types.InlineKeyboardButton("❌ رفض", callback_data=f"reject_{message.chat.id}")
         )
         bot.send_message(ADMIN_ID, "اختار:", reply_markup=markup)
-        bot.send_message(message.chat.id, L(message.from_user, "proof_received"))
+        bot.send_message(message.chat.id, "⏳ تم إرسال مهمتك للمراجعة.")
         user_pending_task[message.chat.id] = False
     except Exception as e:
         bot.send_message(message.chat.id, "❗ حدث خطأ أثناء إرسال الإثبات للإدارة.")
@@ -479,12 +489,7 @@ def handle_callback(callback):
         update_balance(uid, 0.05)
         # منحة الإحالة لأول مهمة
         referral_first_task_reward(uid)
-        # send localized message to user (we need a fake user object with language_code)
-        # The user's language_code isn't available here; we will attempt to fetch a chat member language by storing language at runtime in a map
-        try:
-            bot.send_message(uid, "✔ تم قبول المهمة!\n+0.05 USDT")
-        except Exception:
-            pass
+        bot.send_message(uid, "✔ تم قبول المهمة!\n+0.05 USDT")
         bot.send_message(ADMIN_ID, "✔ تم القبول.")
     elif data.startswith("reject_"):
         uid_str = data.split("_",1)[1]
@@ -492,10 +497,7 @@ def handle_callback(callback):
             uid = int(uid_str)
         except:
             uid = uid_str
-        try:
-            bot.send_message(uid, "❌ تم رفض المهمة.")
-        except Exception:
-            pass
+        bot.send_message(uid, "❌ تم رفض المهمة.")
         bot.send_message(ADMIN_ID, "❌ تم الرفض.")
 
 # =========================
@@ -509,3 +511,4 @@ if __name__ == "__main__":
         print("Stopped by user")
     except Exception as e:
         print("Stopped with error:", e)
+
